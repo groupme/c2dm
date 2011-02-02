@@ -1,45 +1,69 @@
-require 'httparty'
-require 'cgi'
+require 'typhoeus'
 
-module C2DM
-  class Push
-    include HTTParty
-    default_timeout 30
+class C2DM
+  AUTH_URL = 'https://www.google.com/accounts/ClientLogin'
+  PUSH_URL = 'https://android.apis.google.com/c2dm/send'
 
-    attr_accessor :timeout
+  @@auth_token = ENV["C2DM_AUTH_TOKEN"] || C2DM_AUTH_TOKEN
 
-    AUTH_URL = 'https://www.google.com/accounts/ClientLogin'
-    PUSH_URL = 'https://android.apis.google.com/c2dm/send'
-
-    def initialize(username, password, source)
-      post_body = "accountType=HOSTED_OR_GOOGLE&Email=#{username}&Passwd=#{password}&service=ac2dm&source=#{source}"
-      params = {:body => post_body,
-                :headers => {'Content-type' => 'application/x-www-form-urlencoded', 
-                             'Content-length' => "#{post_body.length}"}}
-
-      response = Push.post(AUTH_URL, params)
-      response_split = response.body.split("\n")
-      @auth_token = response_split[2].gsub("Auth=", "")
+  class << self
+    # Call this if you haven't set ENV["C2DM_AUTH_TOKEN"] || C2DM_AUTH_TOKEN
+    # It sets @auth_token on C2DM
+    #
+    # +email+ => Your Google Account email for this application
+    # +password => Your password
+    def authorize(email, password)
+      post_body = "accountType=HOSTED_OR_GOOGLE&Email=#{email}&Passwd=#{password}&service=ac2dm"
+      params = {
+        :body => post_body,
+        :headers => {
+          'Content-type' => 'application/x-www-form-urlencoded',
+          'Content-length' => "#{post_body.length}"
+        }
+      }
+      response = Typhoeus::Request.post(AUTH_URL, params)
+      @auth_token = response.body.split("\n")[2].gsub("Auth=", "")
     end
 
-    def send_notification(registration_id, message)
-      post_body = "registration_id=#{registration_id}&collapse_key=foobar&data.message=#{CGI::escape(message)}"
-      params = {:body => post_body,
-                :headers => {'Authorization' => "GoogleLogin auth=#{@auth_token}"}}
+    # Send a single notification
+    #
+    # +payload+ will be prefixed with data.<key>
+    # e.g. +payload+ = {:foo => 1, :bar => 2} = "data.foo=1&data.bar=2"
+    def send_notification(registration_id, payload, collapse_key = nil)
+      data = {}
+      payload.each {|key, value| data["data.#{key}"] = value}
+      params = {
+        :body => { :registration_id => registration_id },
+        :headers => { 'Authorization' => "GoogleLogin auth=#{@auth_token}" }
+      }
+      params[:body].merge(data)
+      params[:body][:collapse_key] = collapse_key if collapse_key
 
-      response = Push.post(PUSH_URL, params)
-      response
+      Typhoeus::Request.post(PUSH_URL, params)
     end
 
-    def self.send_notifications(username, password, source, notifications)
-      c2dm = Push.new(username, password, source)
-    
-      responses = []
-      notifications.each do |notification|
-        responses << {:body => c2dm.send_notification(notification[:registration_id], notification[:message]), :registration_id => notification[:registration_id]}
+    # Send multiple notifications
+    #
+    # +notifications+ = [
+    #     {
+    #       :registration_id => "...",
+    #       :payload => {...},
+    #       :collapse_key => "..."
+    #     },
+    #     ...
+    # ]
+    def send_notifications(notifications)
+      notifications.map do |notification|
+        send_notification(
+          notification[:registration_id],
+          notification[:payload],
+          notification[:collapse_key]
+        )
       end
-      responses
     end
 
+    def auth_token
+      @auth_token
+    end
   end
 end
