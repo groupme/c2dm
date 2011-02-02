@@ -20,6 +20,10 @@ Use the credentials for the app you've registered with Google.
     
 This sets `auth_token` for future requests.
 
+You can also use cURL to get the AUTH= parameter:
+
+    # curl -X POST https://www.google.com/accounts/ClientLogin -d Email=<email> -d Passwd=<password> -d accountType=HOSTED_OR_GOOGLE -d service=ac2dm
+
 We suggest you store the token and set it in your config files:
 
     C2DM.auth_token = "YOUR_AUTH_TOKEN"
