@@ -1,10 +1,11 @@
 require 'typhoeus'
 
+# Google Cloud To Device Messaging Service
 class C2DM
   AUTH_URL = 'https://www.google.com/accounts/ClientLogin'
   PUSH_URL = 'https://android.apis.google.com/c2dm/send'
 
-  @@auth_token = ENV["C2DM_AUTH_TOKEN"] || C2DM_AUTH_TOKEN
+  @@auth_token = ENV["C2DM_AUTH_TOKEN"]
 
   class << self
     # Call this if you haven't set ENV["C2DM_AUTH_TOKEN"] || C2DM_AUTH_TOKEN
@@ -25,45 +26,55 @@ class C2DM
       @auth_token = response.body.split("\n")[2].gsub("Auth=", "")
     end
 
-    # Send a single notification
+    # Send a notification
     #
-    # +payload+ will be prefixed with data.<key>
-    # e.g. +payload+ = {:foo => 1, :bar => 2} = "data.foo=1&data.bar=2"
-    def send_notification(registration_id, payload, collapse_key = nil)
-      data = {}
-      payload.each {|key, value| data["data.#{key}"] = value}
-      params = {
-        :body => { :registration_id => registration_id },
-        :headers => { 'Authorization' => "GoogleLogin auth=#{@auth_token}" }
-      }
-      params[:body].merge(data)
-      params[:body][:collapse_key] = collapse_key if collapse_key
+    # :registration_id is required.
+    # :collapse_key is optional.
+    #
+    # Other +options+ will be sent as "data.<key>=<value>"
+    #
+    # +options+ = {
+    #   :registration_id => "...",
+    #   :message => "Hi!",
+    #   :extra_data => 42,
+    #   :collapse_key => "some-collapse-key"
+    # }
+    def send_notification(options)
+      payload = {}
+      payload(:registration_id) = options.delete(:registration_id)
+      payload(:collapse_key) = options.delete(:collapse_key)
+      options.each {|key, value| payload["data.#{key}"] = value}
 
-      Typhoeus::Request.post(PUSH_URL, params)
+      Typhoeus::Request.post(PUSH_URL, {
+        :body => payload,
+        :headers => {
+          'Authorization' => "GoogleLogin auth=#{@auth_token}"
+        }
+      })
     end
 
     # Send multiple notifications
     #
     # +notifications+ = [
-    #     {
-    #       :registration_id => "...",
-    #       :payload => {...},
-    #       :collapse_key => "..."
-    #     },
-    #     ...
+    #   {
+    #     :registration_id => "...",
+    #     :payload => {...},
+    #     :collapse_key => "..."
+    #   },
+    #   ...
     # ]
     def send_notifications(notifications)
       notifications.map do |notification|
-        send_notification(
-          notification[:registration_id],
-          notification[:payload],
-          notification[:collapse_key]
-        )
+        send_notification(notification)
       end
     end
 
     def auth_token
       @auth_token
+    end
+
+    def auth_token=(token)
+      @auth_token = token
     end
   end
 end
