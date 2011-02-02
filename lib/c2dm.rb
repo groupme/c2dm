@@ -41,8 +41,8 @@ class C2DM
     # }
     def send_notification(options)
       payload = {}
-      payload(:registration_id) = options.delete(:registration_id)
-      payload(:collapse_key) = options.delete(:collapse_key)
+      payload[:registration_id] = options.delete(:registration_id)
+      payload[:collapse_key] = options.delete(:collapse_key)
       options.each {|key, value| payload["data.#{key}"] = value}
 
       Typhoeus::Request.post(PUSH_URL, {
