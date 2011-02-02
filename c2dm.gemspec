@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.authors = ["Amro Mousa", "Brandon Keene"]
   s.date = %q{2010-12-06}
   s.description = %q{c2dm sends push notifications to Android devices via google c2dm.}
-  s.email = ["amromousa@gmail.com", "brandon@groupme.com"}
+  s.email = ["amromousa@gmail.com", "brandon@groupme.com"]
   s.extra_rdoc_files = [
     "LICENSE.txt",
     "README.markdown"
