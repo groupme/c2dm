@@ -46,8 +46,8 @@ class C2DM
       options.each {|key, value| payload["data.#{key}"] = value}
 
       Typhoeus::Request.post(PUSH_URL, {
-        :body => payload,
-        :headers => {
+        :params   => payload,
+        :headers  => {
           'Authorization' => "GoogleLogin auth=#{@auth_token}"
         }
       })
