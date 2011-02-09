@@ -31,6 +31,10 @@ We suggest you store the token and set it in your config files:
 You can also set it in your environment:
 
     ENV["C2DM_AUTH_TOKEN"] = "YOUR_AUTH_TOKEN"
+    
+If you'd like to set a custom `source` param for debugging, set:
+
+    ENV["C2DM_AUTH_TOKEN"] = "CompanyName-AppName-1.0"
 
 ## Send a notification
 

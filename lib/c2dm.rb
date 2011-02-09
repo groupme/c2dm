@@ -6,6 +6,7 @@ class C2DM
   PUSH_URL = 'https://android.apis.google.com/c2dm/send'
 
   @@auth_token = ENV["C2DM_AUTH_TOKEN"]
+  @@source = ENV["C2DM_SOURCE"] || "Company-AppName-1.0"
 
   class << self
     # Call this if you haven't set ENV["C2DM_AUTH_TOKEN"] || C2DM_AUTH_TOKEN
@@ -14,7 +15,7 @@ class C2DM
     # +email+ => Your Google Account email for this application
     # +password => Your password
     def authorize(email, password)
-      post_body = "accountType=HOSTED_OR_GOOGLE&Email=#{email}&Passwd=#{password}&service=ac2dm"
+      post_body = "accountType=HOSTED_OR_GOOGLE&Email=#{email}&Passwd=#{password}&service=ac2dm&source=#{@source}"
       params = {
         :body => post_body,
         :headers => {
@@ -75,6 +76,14 @@ class C2DM
 
     def auth_token=(token)
       @auth_token = token
+    end
+
+    def source
+      @source
+    end
+
+    def source=(new_source)
+      @source = new_source
     end
   end
 end
