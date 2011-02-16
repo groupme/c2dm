@@ -41,12 +41,19 @@ class C2DM
     #   :collapse_key => "some-collapse-key"
     # }
     def send_notification(options)
+      hydra = Typhoeus::Hydra.new
+      hydra.queue request(options)
+      hydra.run
+    end
+
+    def request(options)
       payload = {}
       payload[:registration_id] = options.delete(:registration_id)
       payload[:collapse_key] = options.delete(:collapse_key)
       options.each {|key, value| payload["data.#{key}"] = value}
 
-      Typhoeus::Request.post(PUSH_URL, {
+      Typhoeus::Request.new(PUSH_URL, {
+        :method => :post,
         :params   => payload,
         :headers  => {
           'Authorization' => "GoogleLogin auth=#{@auth_token}"
